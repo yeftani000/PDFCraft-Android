@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+  <!-- wgpu prefers Vulkan and falls back to OpenGL ES. -->
+  <uses-feature android:name="android.hardware.vulkan.version" android:version="0x400003" android:required="false" />
+  <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
+  <application
+      android:allowBackup="false"
+      android:hasCode="true"
+      android:icon="@mipmap/ic_launcher"
+      android:label="PdfCraft"
+      android:theme="@style/Theme.Craft">
+
+    <activity
+        android:name=".MainActivity"
+        android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale"
+        android:exported="true"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize">
+      <!-- The Rust library: libpdfcraft_android.so -->
+      <meta-data android:name="android.app.lib_name" android:value="pdfcraft_android" />
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:mimeType="application/pdf" />
+      </intent-filter>
+    </activity>
+
+    <!-- Lets the clipboard carry images and files from the app's own folders. -->
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${applicationId}.clipfiles"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/clip_paths" />
+    </provider>
+  </application>
+</manifest>

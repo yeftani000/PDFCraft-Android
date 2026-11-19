@@ -1,0 +1,12 @@
+[package]
+name = "craft-arboard-android"
+version = "0.1.0"
+edition = "2021"
+description = "Android stand-in for the part of arboard's API that PdfCraft uses, backed by the system clipboard"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# On other targets (only a host-side type check of the app uses this crate there) every clipboard
+# operation reports that nothing is available.
+[target.'cfg(target_os = "android")'.dependencies]
+craft-android = { path = "../craft-android" }

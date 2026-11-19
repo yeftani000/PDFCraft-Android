@@ -1,0 +1,13 @@
+[package]
+name = "craft-rfd-android"
+version = "0.1.0"
+edition = "2021"
+description = "Android stand-in for rfd's AsyncFileDialog, backed by craft-android's document picker"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# pdfcraft-ui-egui depends on this on Android only and aliases it in its crate root
+# (`extern crate craft_rfd_android as rfd;`), so `rfd::AsyncFileDialog` calls compile unchanged.
+# On other targets (where only a host-side type check uses it) the dialogs just report "cancelled".
+[target.'cfg(target_os = "android")'.dependencies]
+craft-android = { path = "../craft-android" }

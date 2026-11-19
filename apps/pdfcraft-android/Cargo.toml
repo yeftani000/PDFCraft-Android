@@ -1,0 +1,17 @@
+[package]
+name = "pdfcraft-android"
+version = "0.21.1"
+edition = "2021"
+description = "PdfCraft for Android (see android/README.md)"
+publish = false
+
+[lib]
+name = "pdfcraft_android"
+crate-type = ["cdylib"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+craft-android = { path = "../../crates/craft-android" }
+log = "0.4"
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "wgpu", "android-game-activity"] }
+pdfcraft-engine = { workspace = true }
+pdfcraft-ui-egui = { workspace = true }

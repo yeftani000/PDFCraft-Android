@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where FileProvider may hand out files from, for the clipboard: copied images and files. -->
+<paths>
+  <cache-path name="clip" path="clip/" />
+  <cache-path name="picks" path="picks/" />
+  <files-path name="files" path="." />
+</paths>
