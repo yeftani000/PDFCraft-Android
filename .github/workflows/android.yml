@@ -1,0 +1,100 @@
+name: Android APK
+
+# Builds a sideloadable PdfCraft APK (debug-signed) from the CURRENT storytold/pdfcraft, so each run
+# picks up upstream's latest features. This repo only holds the Android port: the extra crates, the
+# Gradle project and a script that applies the port's two small edits to upstream's files.
+# Run it from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "PdfCraft branch, tag or commit to build (main = latest)"
+        default: main
+      profile:
+        description: "release (small, slow to build) or debug (large, quicker: use while iterating)"
+        type: choice
+        options: [release, debug]
+        default: release
+
+permissions:
+  contents: read
+
+env:
+  NDK_VERSION: 27.2.12479018
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      # This repository: the port.
+      - uses: actions/checkout@v4
+        with:
+          path: port
+
+      # Upstream PdfCraft, at the requested ref (public: no token needed).
+      - uses: actions/checkout@v4
+        with:
+          repository: storytold/pdfcraft
+          ref: ${{ inputs.ref }}
+          path: app
+
+      - name: Add the Android port to PdfCraft
+        run: |
+          set -euo pipefail
+          pip install --quiet tomlkit
+          cp -r port/android app/android
+          cp -r port/apps/pdfcraft-android app/apps/
+          cp -r port/crates/craft-android port/crates/craft-rfd-android port/crates/craft-arboard-android app/crates/
+          mkdir -p app/script/android
+          cp port/script/android/build_apk.sh app/script/android/
+          python3 port/script/android/apply_port.py app
+          {
+            echo "### Android build"
+            echo "PdfCraft \`$(git -C app rev-parse --short HEAD)\` (${{ inputs.ref }}), $(git -C app log -1 --format=%cd --date=short)"
+            echo "Port \`$(git -C port rev-parse --short HEAD)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app
+          key: android-${{ inputs.profile }}
+
+      # aws-lc and other C dependencies are compiled for Android with the NDK's clang.
+      - name: Install native build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build nasm clang libclang-dev pkg-config
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+
+      # The runner already has the Android SDK; add the platform, build tools and NDK we need.
+      - name: Install SDK platform and NDK
+        run: |
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}"
+          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build the APK
+        working-directory: app
+        run: PROFILE="${{ inputs.profile }}" bash script/android/build_apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PdfCraft-android
+          path: app/dist/PdfCraft.apk
+          if-no-files-found: error
